@@ -6,7 +6,7 @@ Xiangnan He, Zhankui He, Xiaoyu Du & Tat-Seng Chua. 2018. **Adversarial Personal
 ## Demo
 The results in Yelp dataset, I train BPR on 50 epochs and robust APR on 25 epochs.
 
-![figure](figure\validation.png)
+![figure](figure/validation.png)
 
 #### Runnig
 I created a demo using Yelp dataset, embedding size 64:
@@ -41,5 +41,6 @@ I obtained datasets:  Yelp(yelp), MovieLens 1 Million (ml-1m) and Pinterest (pin
 - Each line is in the format: (userID,itemID)\t negativeItemID1\t negativeItemID2 ...
 
 ## Notebook version:
+A version of Notebook is provided in:
 adversarial-personalization-ranking-apr-pytorch.ipynb
 https://www.kaggle.com/code/minhtutx/adversarial-personalization-ranking-apr-pytorch
