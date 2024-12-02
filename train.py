@@ -6,6 +6,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar, Learni
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import TensorBoardLogger
 
+from evaluate import test_model
+
 import argparse
 
 parser = argparse.ArgumentParser(description='Get args')
@@ -20,7 +22,6 @@ pretrained = args.pretrained
 
 datamodule = BPRDataModule(**config.dataset)
 datamodule.prepare_data()
-datamodule.setup(stage="fit")
 config.model_config.user_num = datamodule.user_num + 1
 config.model_config.item_num = datamodule.item_num + 1
 
@@ -45,4 +46,8 @@ trainer = Trainer(
     logger = TensorBoardLogger(save_dir="exp", name=config.name)
     )
 
-trainer.fit(model, datamodule)
+datamodule.setup(stage="fit")
+trainer.fit(model, datamodule.train_dataloader(), datamodule.val_dataloader())
+
+datamodule.setup(stage="predict")
+test_model(model, datamodule.predict_dataloader())

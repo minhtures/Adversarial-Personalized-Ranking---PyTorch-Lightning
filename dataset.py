@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 import pandas as pd
+import re
 
 class BPRData(Dataset):
     def __init__(self, df, num_neg=1):
@@ -58,7 +59,7 @@ def collate_data(batch):
     return user, item
 
 class BPRDataModule(LightningDataModule):
-    def __init__(self, data_dir, tr_neg=1, val_neg=99, tr_bs=128, val_bs=32, num_workers=4):
+    def __init__(self, data_dir, tr_neg=1, val_neg=99, tr_bs=128, val_bs=32, num_workers=0):
         super().__init__()
         self.data_dir = data_dir
         self.tr_neg = tr_neg
@@ -70,8 +71,15 @@ class BPRDataModule(LightningDataModule):
     def prepare_data(self):    
         self.df_train = pd.read_csv(self.data_dir+'.train.rating', usecols=[0,1], sep='\t', names = ['user', 'item'])
         self.df_val = pd.read_csv(self.data_dir+'.test.rating', usecols=[0,1], sep='\t', names = ['user', 'item'])
-        self.df_test = pd.read_csv(self.data_dir+'.test.negative', sep='\t', names = ['user', 'item']+[f'item_neg_{i+1}' for i in range(99)])
-        self.df_test['user'] = [t[1] for t in self.df_test['user']]
+        df = pd.read_csv(self.data_dir+'.test.negative', sep='\t', header=None)
+
+        iter = [re.findall('[0-9]+', it) for it in df[0]]
+        self.df_test = pd.DataFrame({
+            'user': [int(i[0]) for i in iter],
+            'item': [int(i[1]) for i in iter]
+        })
+        for i in df.columns[1:]:
+            self.df_test[f'neg_item_{i}'] = df[i]
         
         self.user_num = self.df_train['user'].max()
         self.item_num = self.df_train['item'].max()
@@ -79,12 +87,15 @@ class BPRDataModule(LightningDataModule):
         
     def get_df_info(self):    
         print(self.df_train.describe())
-        # print(self.df_train.head())
-        # print(self.df_val.head())
-        # print(self.df_test.head())
+        print(self.df_val.describe())
+        print(self.df_test.describe())
+
+        print(self.df_train.head())
+        print(self.df_val.head())
+        print(self.df_test.head())
         
         number_interaction = len(self.df_train)
-        sparsity = 100 - 100.0*number_interaction/ (self.user_num*self.user_num)
+        sparsity = 100 - 100.0*number_interaction/ (self.user_num*self.item_num)
         print(f'Number of users: {self.user_num}')
         print(f'Number of items: {self.item_num}')
         print(f'Number of interactions: {number_interaction}')
@@ -99,15 +110,12 @@ class BPRDataModule(LightningDataModule):
         
     def train_dataloader(self):
         return DataLoader(self.train_ds, batch_size=self.tr_bs, 
-                        persistent_workers=True,
                         num_workers=self.num_workers ,shuffle=True, collate_fn = collate_data)
 
     def val_dataloader(self):
         return DataLoader(self.val_ds, batch_size=self.val_bs, 
-                        persistent_workers=True,
                         num_workers=self.num_workers ,shuffle=False, collate_fn = collate_data)
 
-    def test_dataloader(self):
+    def predict_dataloader(self):
         return DataLoader(self.test_ds, batch_size=self.val_bs, 
-                        persistent_workers=True,
                         num_workers=self.num_workers ,shuffle=False, collate_fn = collate_data)
