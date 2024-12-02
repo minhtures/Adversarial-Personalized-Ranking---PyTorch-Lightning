@@ -9,21 +9,22 @@ def bpr_loss(prediction):
     loss = - torch.nn.functional.logsigmoid(prediction_i - prediction_j).mean()
     return loss
 
-def batch_NDCG(prediction, top_k=10):
+def batch_metric(prediction, top_k=10):
     """
     prediction: num_user x num_item
-    each user has one postive item, indicated by 'positive'
+    each user has one postive item at the first position
     NDCG = log(2)/log(rank+1) if rank <=topk
     """
     positive_score = prediction[:,0].reshape(-1,1)
     rank = (prediction - positive_score) > 0
     rank = rank.to(torch.int).sum(dim=-1)            # rank >=0
 
-    mask = (rank < top_k).to(torch.int)         # NDCG <0 if rank>top_k  
+    mask = (rank < top_k).to(torch.float)         # NDCG <0 if rank>top_k  
     NDCG = torch.log(torch.tensor(2.0)) / (torch.log(rank + 2.0))
     NDCG *= mask
+    hit_rate = mask.mean()
 
-    return NDCG.mean()
+    return NDCG.mean(), hit_rate
 
 class BPR(LightningModule):
     def __init__(self, user_num, item_num, embed_size, optimizer=None, scheduler=None,  
@@ -122,8 +123,9 @@ class BPR(LightningModule):
         self.log("reg_loss", reg, prog_bar=True)
         loss += self.reg * reg
         
-        ndcg = batch_NDCG(prediction, self.top_k)
+        ndcg, hr = batch_metric(prediction, self.top_k)
         self.log("ndcg", ndcg, prog_bar=True)
+        self.log("hr", hr, prog_bar=True)
         return loss 
       
     def predict_step(self, batch):
