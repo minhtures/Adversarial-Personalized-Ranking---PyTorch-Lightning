@@ -3,10 +3,10 @@ name: BPR
 dataset:
   data_dir: Data/yelp
   tr_neg : 1
-  val_neg : 99
+  val_neg : 127
   tr_bs :  256
-  val_bs :  128
-  num_workers : 4
+  val_bs :  256
+  # num_workers : 4
 
 model_config:
   embed_size: 64
@@ -28,7 +28,7 @@ model_config:
 
 training:
   max_epochs: 50
-  fast_dev_run: 16
+  # fast_dev_run: 16
   accelerator: cpu
   log_every_n_steps: 20
   reload_dataloaders_every_n_epochs: 1

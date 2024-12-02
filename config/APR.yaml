@@ -6,7 +6,7 @@ dataset:
   val_neg : 99
   tr_bs :  256
   val_bs :  128
-  num_workers : 4
+  # num_workers : 4
 
 model_config:
   # embed_size: 64
